@@ -107,15 +107,22 @@ export default function App() {
       is_sleep: isSleeping(x.local_time),
    }));
     setZonesData(enriched);
-    let found = false;
+    let best = null;
+    let bestScore = -1;
     for (let i = 0; i < 24; i++) {
       const testHour = (h + i) % 24;
       const test = await fetchTimes(testHour, 0, z);
-      if (!test.some((t) => isSleeping(t.local_time))) {
-        setBestHour(testHour);
-        found = true;
-        break;
-        }
+      const awakeCount = test.filter(
+        (t) => !isSleeping(t.local_time)
+      ).length;
+      if (awakeCount > bestScore) {
+        bestScore = awakeCount;
+        best = testHour;
+      }
+    }
+
+setBestHour(best);
+
     }
 
     if (!found) {
