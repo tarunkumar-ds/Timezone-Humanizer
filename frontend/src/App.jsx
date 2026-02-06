@@ -166,9 +166,16 @@ export default function App() {
           style={styles.timeInput}
         />
 
-        {bestHour !== null && (
-          <div style={styles.best}>⭐ Best meeting hour: {bestHour}:00</div>
-        )}
+        {bestHour !== null ? (
+      
+        ) : (
+          <div style={styles.bestTime}>
+          ⚠️ No perfect overlap — try nearby hours.
+      </div>
+      )}
+
+
+          
 
         {zonesData.map((z, i) => (
           <div key={i} style={styles.card}>
