@@ -2,23 +2,52 @@ import { useState, useEffect } from "react";
 
 const USER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const LOCATIONS = [
-  { label: "🇮🇳 India — New Delhi", zone: "Asia/Kolkata" },
-  { label: "🇬🇧 United Kingdom — London", zone: "Europe/London" },
-  { label: "🇺🇸 United States — New York", zone: "America/New_York" },
-  { label: "🇯🇵 Japan — Tokyo", zone: "Asia/Tokyo" },
-  { label: "🇫🇷 France — Paris", zone: "Europe/Paris" },
-  { label: "🇩🇪 Germany — Berlin", zone: "Europe/Berlin" },
-  { label: "🇦🇺 Australia — Sydney", zone: "Australia/Sydney" },
-  { label: "🇨🇦 Canada — Toronto", zone: "America/Toronto" },
-  { label: "🇧🇷 Brazil — São Paulo", zone: "America/Sao_Paulo" },
-  { label: "🇨🇳 China — Beijing", zone: "Asia/Shanghai" },
-  { label: "🇷🇺 Russia — Moscow", zone: "Europe/Moscow" },
-  { label: "🇿🇦 South Africa — Cape Town", zone: "Africa/Johannesburg" },
-  { label: "🇦🇪 UAE — Dubai", zone: "Asia/Dubai" },
-  { label: "🇸🇬 Singapore", zone: "Asia/Singapore" },
-  { label: "🇰🇷 South Korea — Seoul", zone: "Asia/Seoul" },
+const COUNTRIES = [
+  { name: "United States", city: "New York", zone: "America/New_York" },
+  { name: "United Kingdom", city: "London", zone: "Europe/London" },
+  { name: "India", city: "Delhi", zone: "Asia/Kolkata" },
+  { name: "Japan", city: "Tokyo", zone: "Asia/Tokyo" },
+  { name: "Germany", city: "Berlin", zone: "Europe/Berlin" },
+  { name: "France", city: "Paris", zone: "Europe/Paris" },
+  { name: "Canada", city: "Toronto", zone: "America/Toronto" },
+  { name: "Brazil", city: "São Paulo", zone: "America/Sao_Paulo" },
+  { name: "Australia", city: "Sydney", zone: "Australia/Sydney" },
+  { name: "China", city: "Beijing", zone: "Asia/Shanghai" },
+  { name: "Russia", city: "Moscow", zone: "Europe/Moscow" },
+  { name: "South Korea", city: "Seoul", zone: "Asia/Seoul" },
+  { name: "Singapore", city: "Singapore", zone: "Asia/Singapore" },
+  { name: "UAE", city: "Dubai", zone: "Asia/Dubai" },
+  { name: "Italy", city: "Rome", zone: "Europe/Rome" },
+  { name: "Spain", city: "Madrid", zone: "Europe/Madrid" },
+  { name: "Netherlands", city: "Amsterdam", zone: "Europe/Amsterdam" },
+  { name: "Sweden", city: "Stockholm", zone: "Europe/Stockholm" },
+  { name: "Norway", city: "Oslo", zone: "Europe/Oslo" },
+  { name: "Switzerland", city: "Zurich", zone: "Europe/Zurich" },
+  { name: "Mexico", city: "Mexico City", zone: "America/Mexico_City" },
+  { name: "Argentina", city: "Buenos Aires", zone: "America/Argentina/Buenos_Aires" },
+  { name: "Chile", city: "Santiago", zone: "America/Santiago" },
+  { name: "Colombia", city: "Bogotá", zone: "America/Bogota" },
+  { name: "Peru", city: "Lima", zone: "America/Lima" },
+  { name: "South Africa", city: "Cape Town", zone: "Africa/Johannesburg" },
+  { name: "Egypt", city: "Cairo", zone: "Africa/Cairo" },
+  { name: "Nigeria", city: "Lagos", zone: "Africa/Lagos" },
+  { name: "Kenya", city: "Nairobi", zone: "Africa/Nairobi" },
+  { name: "Thailand", city: "Bangkok", zone: "Asia/Bangkok" },
+  { name: "Vietnam", city: "Ho Chi Minh", zone: "Asia/Ho_Chi_Minh" },
+  { name: "Indonesia", city: "Jakarta", zone: "Asia/Jakarta" },
+  { name: "Malaysia", city: "Kuala Lumpur", zone: "Asia/Kuala_Lumpur" },
+  { name: "Philippines", city: "Manila", zone: "Asia/Manila" },
+  { name: "Pakistan", city: "Karachi", zone: "Asia/Karachi" },
+  { name: "Bangladesh", city: "Dhaka", zone: "Asia/Dhaka" },
+  { name: "Sri Lanka", city: "Colombo", zone: "Asia/Colombo" },
+  { name: "Nepal", city: "Kathmandu", zone: "Asia/Kathmandu" },
+  { name: "Turkey", city: "Istanbul", zone: "Europe/Istanbul" },
+  { name: "Israel", city: "Tel Aviv", zone: "Asia/Jerusalem" },
+  { name: "Saudi Arabia", city: "Riyadh", zone: "Asia/Riyadh" },
+  { name: "Qatar", city: "Doha", zone: "Asia/Qatar" },
+  { name: "New Zealand", city: "Auckland", zone: "Pacific/Auckland" }
 ];
+
 
 export default function App() {
   const now = new Date();
@@ -28,10 +57,11 @@ export default function App() {
 
   const [time, setTime] = useState(defaultTime);
   const [zones, setZones] = useState([
-    LOCATIONS[0].zone,
-    LOCATIONS[1].zone,
-    LOCATIONS[2].zone,
+    COUNTRIES[0],
+    COUNTRIES[1],
+    COUNTRIES[2],
   ]);
+
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
 
@@ -47,7 +77,8 @@ export default function App() {
         body: JSON.stringify({
           base_time: t,
           base_zone: USER_ZONE,
-          zones: z,
+          zones: z.map(c => c.zone),
+
         }),
       }
     );
@@ -82,9 +113,10 @@ export default function App() {
     updateTimes(time, zones);
   }, []);
 
-  function changeZone(i, val) {
+  function changeZone(i, country) 
+ {
     const copy = [...zones];
-    copy[i] = val;
+    copy[i] = country;
     setZones(copy);
     updateTimes(time, copy);
   }
@@ -123,16 +155,21 @@ export default function App() {
         {zonesData.map((z, i) => (
           <div key={i} style={styles.card}>
             <select
-              value={zones[i]}
-              onChange={(e) => changeZone(i, e.target.value)}
+              value={zones[i].zone}
+              onChange={(e) => {
+                const selected = COUNTRIES.find(c => c.zone === e.target.value);
+                changeZone(i, selected);
+              }}
               style={styles.select}
-            >
-              {LOCATIONS.map((c) => (
+              >
+              {COUNTRIES.map((c) => (
                 <option key={c.zone} value={c.zone}>
-                  {c.label}
+                  {c.name} — {c.city}
                 </option>
               ))}
             </select>
+
+            
 
             <div style={styles.time}>{z.local_time}</div>
 
