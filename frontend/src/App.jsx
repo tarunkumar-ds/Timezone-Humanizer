@@ -59,37 +59,33 @@ const COUNTRIES = [
 
 export default function App() {
   const now = new Date();
-  const defaultTime = `${String(now.getHours()).padStart(2, "0")}:${String(
+  const defaultTime = `${String(now.getHours()).padStart(2,"0")}:${String(
     now.getMinutes()
-  ).padStart(2, "0")}`;
+  ).padStart(2,"0")}`;
 
   const [time, setTime] = useState(defaultTime);
   const [zones, setZones] = useState([
     COUNTRIES[0],
-    COUNTRIES[1],
-    COUNTRIES[2],
+    COUNTRIES[4],
+    COUNTRIES[5],
   ]);
 
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
 
   const hour = parseInt(time.split(":")[0]);
-  const isNight = hour < 7;
+  const isNight = hour >= 22 || hour < 6;
 
-  async function fetchTimes(t, z) {
-    const res = await fetch(
-      "https://timezone-humanizer.onrender.com/convert-time",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          base_time: t,
-          base_zone: USER_ZONE,
-          zones: z.map(c => c.zone),
-
-        }),
-      }
-    );
+  async function fetchTimes(baseTime, z) {
+    const res = await fetch("https://timezone-humanizer.onrender.com/convert-time", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        base_time: baseTime,
+        base_zone: USER_ZONE,
+        zones: z.map(c => c.zone),
+      }),
+    });
 
     return await res.json();
   }
@@ -99,47 +95,43 @@ export default function App() {
     return h >= 23 || h < 7;
   }
 
+  async function updateTimes(baseTime, z = zones) {
+    const data = await fetchTimes(baseTime, z);
 
-  async function updateTimes(h, m, z = zones) {
-    const data = await fetchTimes(h, m, z);
-    const enriched = data.map((x) => ({
+    const enriched = data.map(x => ({
       ...x,
       is_sleep: isSleeping(x.local_time),
-   }));
+    }));
+
     setZonesData(enriched);
+
     let best = null;
     let bestScore = -1;
+
+    const baseHour = parseInt(baseTime.split(":")[0]);
+
     for (let i = 0; i < 24; i++) {
-      const testHour = (h + i) % 24;
-      const test = await fetchTimes(testHour, 0, z);
-      const awakeCount = test.filter(
-        (t) => !isSleeping(t.local_time)
-      ).length;
-      if (awakeCount > bestScore) {
-        bestScore = awakeCount;
+      const testHour = (baseHour + i) % 24;
+      const testTime = `${String(testHour).padStart(2,"0")}:00`;
+
+      const test = await fetchTimes(testTime, z);
+
+      const awake = test.filter(t => !isSleeping(t.local_time)).length;
+
+      if (awake > bestScore) {
+        bestScore = awake;
         best = testHour;
       }
     }
 
-setBestHour(best);
-
-    }
-
-    if (!found) {
-      setBestHour(null);
-    }
-
+    setBestHour(best);
   }
 
-
-  
-
   useEffect(() => {
-    updateTimes(time, zones);
+    updateTimes(time);
   }, []);
 
-  function changeZone(i, country) 
- {
+  function changeZone(i, country) {
     const copy = [...zones];
     copy[i] = country;
     setZones(copy);
@@ -147,82 +139,66 @@ setBestHour(best);
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: isNight
-          ? "linear-gradient(180deg,#0f172a,#020617)"
-          : "linear-gradient(180deg,#f5f7ff,#eef2ff)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 12,
-        fontFamily: "system-ui",
-      }}
-    >
+    <div style={{
+      minHeight:"100vh",
+      background: isNight
+        ? "linear-gradient(180deg,#0f172a,#020617)"
+        : "linear-gradient(180deg,#f5f7ff,#eef2ff)",
+      display:"flex",
+      justifyContent:"center",
+      alignItems:"center",
+      padding:12,
+      fontFamily:"system-ui"
+    }}>
       <div style={styles.container}>
         <h2>Time-Zone Humanizer</h2>
+
+        <p style={{color:"#555",fontSize:14}}>
+          Enter your time and compare with global teammates.
+        </p>
 
         <input
           type="time"
           value={time}
-          onChange={(e) => {
+          onChange={(e)=>{
             setTime(e.target.value);
             updateTimes(e.target.value);
           }}
           style={styles.timeInput}
         />
 
-        {bestHour !== null ? (
-      <div style={styles.bestTime}>
-        ⭐ Best meeting hour: {bestHour}:00
-      </div>
-    ) : (
-      <div style={styles.bestTime}>
-        ⚠️ No perfect overlap — try nearby hours.
-      </div>
-    )}
+        <div style={styles.best}>
+          ⭐ Best meeting hour: {bestHour}:00
+        </div>
 
-
-        
-
-
-          
-
-        {zonesData.map((z, i) => (
+        {zonesData.map((z,i)=>(
           <div key={i} style={styles.card}>
             <select
               value={zones[i].zone}
-              onChange={(e) => {
-                const selected = COUNTRIES.find(c => c.zone === e.target.value);
-                changeZone(i, selected);
+              onChange={(e)=>{
+                const sel = COUNTRIES.find(c=>c.zone===e.target.value);
+                changeZone(i,sel);
               }}
               style={styles.select}
-              >
-              {COUNTRIES.map((c) => (
+            >
+              {COUNTRIES.map(c=>(
                 <option key={c.zone} value={c.zone}>
                   {c.name} — {c.city}
                 </option>
               ))}
             </select>
 
-            
-
             <div style={styles.time}>{z.local_time}</div>
 
-            <div style={{ color: z.is_sleep ? "#dc2626" : "#16a34a" }}>
-              {z.is_sleep ? "Sleeping 🌙" : "Available ☀️"}
+            <div style={{color:z.is_sleep?"#dc2626":"#16a34a"}}>
+              {z.is_sleep?"Sleeping 🌙":"Available ☀️"}
             </div>
           </div>
         ))}
 
         <div style={styles.footer}>
           Built by Tarun Kumar ·{" "}
-          <a
-            href="https://github.com/tarunkumar-ds/Timezone-Humanizer"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a href="https://github.com/tarunkumar-ds/Timezone-Humanizer" target="_blank" rel="noreferrer">
             GitHub
           </a>
         </div>
@@ -232,52 +208,53 @@ setBestHour(best);
 }
 
 const styles = {
-  container: {
-    width: "100%",
-    maxWidth: 420,
-    background: "white",
-    borderRadius: 14,
-    padding: 20,
-    boxShadow: "0 15px 35px rgba(0,0,0,.15)",
+  container:{
+    width:"100%",
+    maxWidth:420,
+    background:"white",
+    borderRadius:14,
+    padding:20,
+    boxShadow:"0 15px 35px rgba(0,0,0,.15)"
   },
 
-  timeInput: {
-    width: "100%",
-    padding: 10,
-    fontSize: 16,
-    marginTop: 10,
+  timeInput:{
+    width:"100%",
+    padding:10,
+    fontSize:16,
+    marginTop:10
   },
 
-  best: {
-    marginTop: 10,
-    background: "#eef2ff",
-    padding: 8,
-    borderRadius: 6,
-    fontSize: 13,
+  best:{
+    marginTop:10,
+    background:"#eef2ff",
+    padding:8,
+    borderRadius:6,
+    fontSize:13
   },
 
-  card: {
-    marginTop: 15,
-    border: "1px solid #eee",
-    borderRadius: 10,
-    padding: 12,
+  card:{
+    marginTop:15,
+    border:"1px solid #eee",
+    borderRadius:10,
+    padding:12
   },
 
-  select: {
-    width: "100%",
-    marginBottom: 8,
+  select:{
+    width:"100%",
+    marginBottom:8
   },
 
-  time: {
-    fontSize: 22,
-    fontWeight: 600,
+  time:{
+    fontSize:22,
+    fontWeight:600
   },
 
-  footer: {
-    marginTop: 25,
-    textAlign: "center",
-    fontSize: 12,
-    color: "#777",
-  },
+  footer:{
+    marginTop:25,
+    textAlign:"center",
+    fontSize:12,
+    color:"#777"
+  }
 };
+
 
