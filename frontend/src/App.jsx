@@ -1,38 +1,48 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
-const ALL_ZONES = Intl.supportedValuesOf("timeZone");
 const USER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const NOW = new Date();
+
+// Simple country → timezone map
+const COUNTRIES = [
+  { label: "🇬🇧 United Kingdom", zone: "Europe/London" },
+  { label: "🇯🇵 Japan", zone: "Asia/Tokyo" },
+  { label: "🇮🇳 India", zone: "Asia/Kolkata" },
+  { label: "🇺🇸 United States", zone: "America/New_York" },
+  { label: "🇦🇺 Australia", zone: "Australia/Sydney" },
+];
 
 export default function App() {
-  const [hour, setHour] = useState(NOW.getHours());
-  const [minute, setMinute] = useState(NOW.getMinutes());
-  const [zones, setZones] = useState([
-    "Europe/London",
-    "Asia/Tokyo",
-    "Asia/Kolkata",
-  ]);
+  const now = new Date();
+  const defaultTime = `${String(now.getHours()).padStart(2, "0")}:${String(
+    now.getMinutes()
+  ).padStart(2, "0")}`;
 
+  const [time, setTime] = useState(defaultTime);
+  const [zones, setZones] = useState([
+    COUNTRIES[0].zone,
+    COUNTRIES[1].zone,
+    COUNTRIES[2].zone,
+  ]);
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
-  const debounceRef = useRef(null);
 
+  const hour = parseInt(time.split(":")[0]);
   const isNight = hour < 7;
-  const isMobile = window.innerWidth < 640;
 
-  async function fetchTimes(h, m, z = zones) {
+  async function fetchTimes(t, z = zones) {
     const res = await fetch(
       "https://timezone-humanizer.onrender.com/convert-time",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          base_time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+          base_time: t,
           base_zone: USER_ZONE,
           zones: z,
         }),
       }
     );
+
     return await res.json();
   }
 
@@ -40,8 +50,8 @@ export default function App() {
     return parseInt(localTime.split(":")[0]) < 7;
   }
 
-  async function updateTimes(h, m, z = zones) {
-    const data = await fetchTimes(h, m, z);
+  async function updateTimes(t, z = zones) {
+    const data = await fetchTimes(t, z);
 
     const enriched = data.map((x) => ({
       ...x,
@@ -51,7 +61,7 @@ export default function App() {
     setZonesData(enriched);
 
     for (let i = 0; i < 24; i++) {
-      const test = await fetchTimes(i, 0, z);
+      const test = await fetchTimes(`${String(i).padStart(2, "0")}:00`, z);
       if (!test.some((t) => isSleeping(t.local_time))) {
         setBestHour(i);
         break;
@@ -60,130 +70,78 @@ export default function App() {
   }
 
   useEffect(() => {
-    updateTimes(hour, minute, zones);
+    updateTimes(time, zones);
   }, []);
-
-  function onTimeChange(h, m) {
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => updateTimes(h, m), 250);
-  }
 
   function changeZone(i, val) {
     const copy = [...zones];
     copy[i] = val;
     setZones(copy);
-    updateTimes(hour, minute, copy);
-  }
-
-  function icon(time, sleep) {
-    const h = parseInt(time.split(":")[0]);
-    if (sleep) return "🌙";
-    if (h >= 6 && h < 18) return "☀️";
-    return "🌙";
+    updateTimes(time, copy);
   }
 
   return (
     <div
       style={{
-        ...styles.page,
+        minHeight: "100vh",
         background: isNight
           ? "linear-gradient(180deg,#0f172a,#020617)"
           : "linear-gradient(180deg,#f5f7ff,#eef2ff)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 12,
+        fontFamily: "system-ui",
       }}
     >
       <div style={styles.container}>
-        <h1>Time-Zone Humanizer</h1>
+        <h2>Time-Zone Humanizer</h2>
 
-        <p style={styles.intro}>
-          A visual way to find meeting-friendly time windows across global teams.
+        <p style={{ color: "#555" }}>
+          Enter your time. Instantly see availability worldwide.
         </p>
 
-        <label>Hour</label>
         <input
-          type="range"
-          min="0"
-          max="23"
-          value={hour}
+          type="time"
+          value={time}
           onChange={(e) => {
-            const h = Number(e.target.value);
-            setHour(h);
-            onTimeChange(h, minute);
+            setTime(e.target.value);
+            updateTimes(e.target.value);
           }}
-          style={{ width: "100%" }}
+          style={styles.timeInput}
         />
-
-        <label style={{ marginTop: 10, display: "block" }}>Minutes</label>
-        <input
-          type="range"
-          min="0"
-          max="59"
-          value={minute}
-          onChange={(e) => {
-            const m = Number(e.target.value);
-            setMinute(m);
-            onTimeChange(hour, m);
-          }}
-          style={{ width: "100%" }}
-        />
-
-        <div style={{ marginTop: 10 }}>
-          {String(hour).padStart(2, "0")}:
-          {String(minute).padStart(2, "0")} — Your time ({USER_ZONE})
-        </div>
 
         {bestHour !== null && (
-          <div style={styles.bestTime}>
-            ⭐ Suggested meeting hour: {bestHour}:00
+          <div style={styles.best}>
+            ⭐ Best meeting hour: {bestHour}:00
           </div>
         )}
 
-        <div
-          style={{
-            ...styles.cards,
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)",
-          }}
-        >
-          {zonesData.map((z, i) => (
-            <div key={i} style={styles.card}>
-              <select
-                value={zones[i]}
-                onChange={(e) => changeZone(i, e.target.value)}
-                style={styles.select}
-              >
-                {ALL_ZONES.map((zone) => (
-                  <option key={zone}>{zone}</option>
-                ))}
-              </select>
+        {zonesData.length === 0 && (
+          <div style={{ marginTop: 20 }}>Loading locations…</div>
+        )}
 
-              <div style={styles.cardTime}>
-                {z.local_time} {icon(z.local_time, z.is_sleep)}
-              </div>
+        {zonesData.map((z, i) => (
+          <div key={i} style={styles.card}>
+            <select
+              value={zones[i]}
+              onChange={(e) => changeZone(i, e.target.value)}
+              style={styles.select}
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.zone} value={c.zone}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
 
-              <div style={{ color: z.is_sleep ? "#dc2626" : "#16a34a" }}>
-                {z.is_sleep ? "Sleeping" : "Available"}
-              </div>
+            <div style={styles.time}>{z.local_time}</div>
+
+            <div style={{ color: z.is_sleep ? "#dc2626" : "#16a34a" }}>
+              {z.is_sleep ? "Sleeping 🌙" : "Available ☀️"}
             </div>
-          ))}
-        </div>
-
-        <hr style={{ margin: "30px 0" }} />
-
-        <h3>How it works</h3>
-        <p>Select a time → see global availability → pick the green window.</p>
-
-        <h3>Use cases</h3>
-        <ul>
-          <li>Remote standups</li>
-          <li>Client calls</li>
-          <li>International interviews</li>
-        </ul>
-
-        <h3>Features</h3>
-        <ul>
-          <li>Live timezone conversion</li>
-          <li>Sleep detection</li>
-          <li>Best meeting suggestion</li>
-        </ul>
+          </div>
+        ))}
 
         <div style={styles.footer}>
           Built by Tarun Kumar ·{" "}
@@ -201,61 +159,49 @@ export default function App() {
 }
 
 const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 12,
-    fontFamily: "system-ui",
-  },
-
   container: {
     width: "100%",
-    maxWidth: 900,
+    maxWidth: 420,
     background: "white",
-    borderRadius: 16,
-    padding: 24,
-    boxShadow: "0 20px 40px rgba(0,0,0,.12)",
+    borderRadius: 14,
+    padding: 20,
+    boxShadow: "0 15px 35px rgba(0,0,0,.15)",
   },
 
-  intro: {
-    color: "#555",
-    marginBottom: 16,
+  timeInput: {
+    width: "100%",
+    padding: 10,
+    fontSize: 16,
+    marginTop: 10,
   },
 
-  bestTime: {
+  best: {
     marginTop: 10,
     background: "#eef2ff",
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  cards: {
-    marginTop: 20,
-    display: "grid",
-    gap: 12,
+    padding: 8,
+    borderRadius: 6,
+    fontSize: 13,
   },
 
   card: {
+    marginTop: 15,
     border: "1px solid #eee",
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
   },
 
   select: {
     width: "100%",
-    padding: 6,
-    marginBottom: 10,
+    marginBottom: 8,
   },
 
-  cardTime: {
+  time: {
     fontSize: 22,
     fontWeight: 600,
   },
 
   footer: {
-    marginTop: 30,
+    marginTop: 25,
     textAlign: "center",
     fontSize: 12,
     color: "#777",
