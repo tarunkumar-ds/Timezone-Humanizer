@@ -95,8 +95,12 @@ export default function App() {
   }
 
   function isSleeping(localTime) {
-    return parseInt(localTime.split(":")[0]) < 7;
+    const h = parseInt(localTime.split(":")[0]);
+    return h >= 23 || h < 7;
   }
+
+
+  
 
   async function updateTimes(t, z = zones) {
     const data = await fetchTimes(t, z);
