@@ -113,12 +113,14 @@ export default function App() {
     setZonesData(enriched);
 
     for (let i = 0; i < 24; i++) {
-      const test = await fetchTimes(`${String(i).padStart(2, "0")}:00`, z);
+      const testHour = (hour + i) % 24;
+      const test = await fetchTimes(testHour, 0, z);
       if (!test.some((t) => isSleeping(t.local_time))) {
-        setBestHour(i);
+        setBestHour(testHour);
         break;
-      }
+        }
     }
+        
   }
 
   useEffect(() => {
