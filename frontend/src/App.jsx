@@ -21,7 +21,8 @@ export default function App() {
   const isNight = hour < 7;
 
   async function fetchTimes(h, m, z = zones) {
-    const res = await fetch("http://127.0.0.1:8000/convert-time", {
+    const res = await fetch("https://timezone-humanizer.onrender.com/convert-time
+", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
