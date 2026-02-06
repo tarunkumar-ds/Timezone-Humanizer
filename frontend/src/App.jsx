@@ -2,15 +2,6 @@ import { useState, useEffect } from "react";
 
 const USER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// Simple country → timezone map
-const COUNTRIES = [
-  { label: "🇬🇧 United Kingdom", zone: "Europe/London" },
-  { label: "🇯🇵 Japan", zone: "Asia/Tokyo" },
-  { label: "🇮🇳 India", zone: "Asia/Kolkata" },
-  { label: "🇺🇸 United States", zone: "America/New_York" },
-  { label: "🇦🇺 Australia", zone: "Australia/Sydney" },
-];
-
 export default function App() {
   const now = new Date();
   const defaultTime = `${String(now.getHours()).padStart(2, "0")}:${String(
@@ -18,18 +9,35 @@ export default function App() {
   ).padStart(2, "0")}`;
 
   const [time, setTime] = useState(defaultTime);
-  const [zones, setZones] = useState([
-    COUNTRIES[0].zone,
-    COUNTRIES[1].zone,
-    COUNTRIES[2].zone,
-  ]);
+  const [countries, setCountries] = useState([]);
+  const [zones, setZones] = useState([]);
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
 
   const hour = parseInt(time.split(":")[0]);
   const isNight = hour < 7;
 
-  async function fetchTimes(t, z = zones) {
+  // Load ALL countries + capitals + timezones
+  useEffect(() => {
+    fetch("https://restcountries.com/v3.1/all")
+      .then((r) => r.json())
+      .then((data) => {
+        const cleaned = data
+          .filter((c) => c.timezones && c.capital)
+          .map((c) => ({
+            name: c.name.common,
+            capital: c.capital?.[0],
+            flag: c.flag,
+            zone: c.timezones[0].replace("UTC", "Etc/GMT"),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setCountries(cleaned);
+        setZones(cleaned.slice(0, 3).map((c) => c.zone));
+      });
+  }, []);
+
+  async function fetchTimes(t, z) {
     const res = await fetch(
       "https://timezone-humanizer.onrender.com/convert-time",
       {
@@ -70,8 +78,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    updateTimes(time, zones);
-  }, []);
+    if (zones.length) updateTimes(time, zones);
+  }, [zones]);
 
   function changeZone(i, val) {
     const copy = [...zones];
@@ -98,7 +106,7 @@ export default function App() {
         <h2>Time-Zone Humanizer</h2>
 
         <p style={{ color: "#555" }}>
-          Enter your time. Instantly see availability worldwide.
+          Enter your time and compare with any country instantly.
         </p>
 
         <input
@@ -112,14 +120,10 @@ export default function App() {
         />
 
         {bestHour !== null && (
-          <div style={styles.best}>
-            ⭐ Best meeting hour: {bestHour}:00
-          </div>
+          <div style={styles.best}>⭐ Best meeting hour: {bestHour}:00</div>
         )}
 
-        {zonesData.length === 0 && (
-          <div style={{ marginTop: 20 }}>Loading locations…</div>
-        )}
+        {zonesData.length === 0 && <div>Loading countries…</div>}
 
         {zonesData.map((z, i) => (
           <div key={i} style={styles.card}>
@@ -128,9 +132,9 @@ export default function App() {
               onChange={(e) => changeZone(i, e.target.value)}
               style={styles.select}
             >
-              {COUNTRIES.map((c) => (
+              {countries.map((c) => (
                 <option key={c.zone} value={c.zone}>
-                  {c.label}
+                  {c.flag} {c.name} — {c.capital}
                 </option>
               ))}
             </select>
