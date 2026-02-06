@@ -15,9 +15,10 @@ export default function App() {
 
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
-
   const debounceRef = useRef(null);
+
   const isNight = hour < 7;
+  const isMobile = window.innerWidth < 640;
 
   async function fetchTimes(h, m, z = zones) {
     const res = await fetch(
@@ -32,13 +33,11 @@ export default function App() {
         }),
       }
     );
-
     return await res.json();
   }
 
   function isSleeping(localTime) {
-    const h = parseInt(localTime.split(":")[0]);
-    return h < 7;
+    return parseInt(localTime.split(":")[0]) < 7;
   }
 
   async function updateTimes(h, m, z = zones) {
@@ -83,8 +82,6 @@ export default function App() {
     return "🌙";
   }
 
-  const isMobile = window.innerWidth < 640;
-
   return (
     <div
       style={{
@@ -95,11 +92,10 @@ export default function App() {
       }}
     >
       <div style={styles.container}>
-        <h1 style={{ fontSize: isMobile ? 22 : 32 }}>Time-Zone Humanizer</h1>
+        <h1>Time-Zone Humanizer</h1>
 
         <p style={styles.intro}>
-          Pick a time and instantly see whether teammates across the world are
-          awake or sleeping — plus get a suggested meeting window.
+          A visual way to find meeting-friendly time windows across global teams.
         </p>
 
         <label>Hour</label>
@@ -130,7 +126,7 @@ export default function App() {
           style={{ width: "100%" }}
         />
 
-        <div style={{ marginTop: 10, fontSize: 14 }}>
+        <div style={{ marginTop: 10 }}>
           {String(hour).padStart(2, "0")}:
           {String(minute).padStart(2, "0")} — Your time ({USER_ZONE})
         </div>
@@ -163,17 +159,31 @@ export default function App() {
                 {z.local_time} {icon(z.local_time, z.is_sleep)}
               </div>
 
-              <div
-                style={{
-                  color: z.is_sleep ? "#dc2626" : "#16a34a",
-                  fontSize: 13,
-                }}
-              >
+              <div style={{ color: z.is_sleep ? "#dc2626" : "#16a34a" }}>
                 {z.is_sleep ? "Sleeping" : "Available"}
               </div>
             </div>
           ))}
         </div>
+
+        <hr style={{ margin: "30px 0" }} />
+
+        <h3>How it works</h3>
+        <p>Select a time → see global availability → pick the green window.</p>
+
+        <h3>Use cases</h3>
+        <ul>
+          <li>Remote standups</li>
+          <li>Client calls</li>
+          <li>International interviews</li>
+        </ul>
+
+        <h3>Features</h3>
+        <ul>
+          <li>Live timezone conversion</li>
+          <li>Sleep detection</li>
+          <li>Best meeting suggestion</li>
+        </ul>
 
         <div style={styles.footer}>
           Built by Tarun Kumar ·{" "}
@@ -196,9 +206,8 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    fontFamily: "system-ui",
-    transition: "background .4s ease",
     padding: 12,
+    fontFamily: "system-ui",
   },
 
   container: {
@@ -212,10 +221,7 @@ const styles = {
 
   intro: {
     color: "#555",
-    maxWidth: 520,
     marginBottom: 16,
-    fontSize: 14,
-    lineHeight: 1.5,
   },
 
   bestTime: {
@@ -223,7 +229,6 @@ const styles = {
     background: "#eef2ff",
     padding: 10,
     borderRadius: 8,
-    fontSize: 13,
   },
 
   cards: {
@@ -240,18 +245,17 @@ const styles = {
 
   select: {
     width: "100%",
-    padding: 8,
+    padding: 6,
     marginBottom: 10,
-    fontSize: 14,
   },
 
   cardTime: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 600,
   },
 
   footer: {
-    marginTop: 28,
+    marginTop: 30,
     textAlign: "center",
     fontSize: 12,
     color: "#777",
