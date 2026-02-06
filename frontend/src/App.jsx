@@ -2,6 +2,24 @@ import { useState, useEffect } from "react";
 
 const USER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+const LOCATIONS = [
+  { label: "🇮🇳 India — New Delhi", zone: "Asia/Kolkata" },
+  { label: "🇬🇧 United Kingdom — London", zone: "Europe/London" },
+  { label: "🇺🇸 United States — New York", zone: "America/New_York" },
+  { label: "🇯🇵 Japan — Tokyo", zone: "Asia/Tokyo" },
+  { label: "🇫🇷 France — Paris", zone: "Europe/Paris" },
+  { label: "🇩🇪 Germany — Berlin", zone: "Europe/Berlin" },
+  { label: "🇦🇺 Australia — Sydney", zone: "Australia/Sydney" },
+  { label: "🇨🇦 Canada — Toronto", zone: "America/Toronto" },
+  { label: "🇧🇷 Brazil — São Paulo", zone: "America/Sao_Paulo" },
+  { label: "🇨🇳 China — Beijing", zone: "Asia/Shanghai" },
+  { label: "🇷🇺 Russia — Moscow", zone: "Europe/Moscow" },
+  { label: "🇿🇦 South Africa — Cape Town", zone: "Africa/Johannesburg" },
+  { label: "🇦🇪 UAE — Dubai", zone: "Asia/Dubai" },
+  { label: "🇸🇬 Singapore", zone: "Asia/Singapore" },
+  { label: "🇰🇷 South Korea — Seoul", zone: "Asia/Seoul" },
+];
+
 export default function App() {
   const now = new Date();
   const defaultTime = `${String(now.getHours()).padStart(2, "0")}:${String(
@@ -9,33 +27,16 @@ export default function App() {
   ).padStart(2, "0")}`;
 
   const [time, setTime] = useState(defaultTime);
-  const [countries, setCountries] = useState([]);
-  const [zones, setZones] = useState([]);
+  const [zones, setZones] = useState([
+    LOCATIONS[0].zone,
+    LOCATIONS[1].zone,
+    LOCATIONS[2].zone,
+  ]);
   const [zonesData, setZonesData] = useState([]);
   const [bestHour, setBestHour] = useState(null);
 
   const hour = parseInt(time.split(":")[0]);
   const isNight = hour < 7;
-
-  // Load ALL countries + capitals + timezones
-  useEffect(() => {
-    fetch("https://restcountries.com/v3.1/all")
-      .then((r) => r.json())
-      .then((data) => {
-        const cleaned = data
-          .filter((c) => c.timezones && c.capital)
-          .map((c) => ({
-            name: c.name.common,
-            capital: c.capital?.[0],
-            flag: c.flag,
-            zone: c.timezones[0].replace("UTC", "Etc/GMT"),
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        setCountries(cleaned);
-        setZones(cleaned.slice(0, 3).map((c) => c.zone));
-      });
-  }, []);
 
   async function fetchTimes(t, z) {
     const res = await fetch(
@@ -78,8 +79,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (zones.length) updateTimes(time, zones);
-  }, [zones]);
+    updateTimes(time, zones);
+  }, []);
 
   function changeZone(i, val) {
     const copy = [...zones];
@@ -105,10 +106,6 @@ export default function App() {
       <div style={styles.container}>
         <h2>Time-Zone Humanizer</h2>
 
-        <p style={{ color: "#555" }}>
-          Enter your time and compare with any country instantly.
-        </p>
-
         <input
           type="time"
           value={time}
@@ -123,8 +120,6 @@ export default function App() {
           <div style={styles.best}>⭐ Best meeting hour: {bestHour}:00</div>
         )}
 
-        {zonesData.length === 0 && <div>Loading countries…</div>}
-
         {zonesData.map((z, i) => (
           <div key={i} style={styles.card}>
             <select
@@ -132,9 +127,9 @@ export default function App() {
               onChange={(e) => changeZone(i, e.target.value)}
               style={styles.select}
             >
-              {countries.map((c) => (
+              {LOCATIONS.map((c) => (
                 <option key={c.zone} value={c.zone}>
-                  {c.flag} {c.name} — {c.capital}
+                  {c.label}
                 </option>
               ))}
             </select>
@@ -211,3 +206,4 @@ const styles = {
     color: "#777",
   },
 };
+
