@@ -100,28 +100,32 @@ export default function App() {
   }
 
 
-  
-
-  async function updateTimes(t, z = zones) {
-    const data = await fetchTimes(t, z);
-
+  async function updateTimes(h, m, z = zones) {
+    const data = await fetchTimes(h, m, z);
     const enriched = data.map((x) => ({
       ...x,
       is_sleep: isSleeping(x.local_time),
-    }));
-
+   }));
     setZonesData(enriched);
-
+    let found = false;
     for (let i = 0; i < 24; i++) {
-      const testHour = (hour + i) % 24;
+      const testHour = (h + i) % 24;
       const test = await fetchTimes(testHour, 0, z);
       if (!test.some((t) => isSleeping(t.local_time))) {
         setBestHour(testHour);
+        found = true;
         break;
         }
     }
-        
+
+    if (!found) {
+      setBestHour(null);
+    }
+
   }
+
+
+  
 
   useEffect(() => {
     updateTimes(time, zones);
