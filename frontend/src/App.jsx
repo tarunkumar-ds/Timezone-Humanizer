@@ -17,27 +17,28 @@ export default function App() {
   const [bestHour, setBestHour] = useState(null);
 
   const debounceRef = useRef(null);
-
   const isNight = hour < 7;
 
   async function fetchTimes(h, m, z = zones) {
-    const res = await fetch("https://timezone-humanizer.onrender.com/convert-time", {
-
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        base_time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
-        base_zone: USER_ZONE,
-        zones: z,
-      }),
-    });
+    const res = await fetch(
+      "https://timezone-humanizer.onrender.com/convert-time",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          base_time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+          base_zone: USER_ZONE,
+          zones: z,
+        }),
+      }
+    );
 
     return await res.json();
   }
 
   function isSleeping(localTime) {
     const h = parseInt(localTime.split(":")[0]);
-    return h < 7; // midnight → 6:59am
+    return h < 7;
   }
 
   async function updateTimes(h, m, z = zones) {
@@ -50,7 +51,6 @@ export default function App() {
 
     setZonesData(enriched);
 
-    // best hour scan (hour only)
     for (let i = 0; i < 24; i++) {
       const test = await fetchTimes(i, 0, z);
       if (!test.some((t) => isSleeping(t.local_time))) {
@@ -83,6 +83,8 @@ export default function App() {
     return "🌙";
   }
 
+  const isMobile = window.innerWidth < 640;
+
   return (
     <div
       style={{
@@ -93,14 +95,13 @@ export default function App() {
       }}
     >
       <div style={styles.container}>
-        <h1>Time-Zone Humanizer</h1>
+        <h1 style={{ fontSize: isMobile ? 22 : 32 }}>Time-Zone Humanizer</h1>
 
         <p style={styles.intro}>
           Pick a time and instantly see whether teammates across the world are
           awake or sleeping — plus get a suggested meeting window.
         </p>
 
-        {/* Hour */}
         <label>Hour</label>
         <input
           type="range"
@@ -115,7 +116,6 @@ export default function App() {
           style={{ width: "100%" }}
         />
 
-        {/* Minute */}
         <label style={{ marginTop: 10, display: "block" }}>Minutes</label>
         <input
           type="range"
@@ -130,7 +130,7 @@ export default function App() {
           style={{ width: "100%" }}
         />
 
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 10, fontSize: 14 }}>
           {String(hour).padStart(2, "0")}:
           {String(minute).padStart(2, "0")} — Your time ({USER_ZONE})
         </div>
@@ -141,8 +141,12 @@ export default function App() {
           </div>
         )}
 
-        {/* CARDS */}
-        <div style={styles.cards}>
+        <div
+          style={{
+            ...styles.cards,
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)",
+          }}
+        >
           {zonesData.map((z, i) => (
             <div key={i} style={styles.card}>
               <select
@@ -171,7 +175,6 @@ export default function App() {
           ))}
         </div>
 
-        
         <div style={styles.footer}>
           Built by Tarun Kumar ·{" "}
           <a
@@ -195,20 +198,24 @@ const styles = {
     alignItems: "center",
     fontFamily: "system-ui",
     transition: "background .4s ease",
+    padding: 12,
   },
 
   container: {
-    width: 900,
+    width: "100%",
+    maxWidth: 900,
     background: "white",
     borderRadius: 16,
-    padding: 40,
+    padding: 24,
     boxShadow: "0 20px 40px rgba(0,0,0,.12)",
   },
 
   intro: {
     color: "#555",
     maxWidth: 520,
-    marginBottom: 20,
+    marginBottom: 16,
+    fontSize: 14,
+    lineHeight: 1.5,
   },
 
   bestTime: {
@@ -216,43 +223,37 @@ const styles = {
     background: "#eef2ff",
     padding: 10,
     borderRadius: 8,
-    fontSize: 14,
+    fontSize: 13,
   },
 
   cards: {
-    marginTop: 30,
+    marginTop: 20,
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
-    gap: 20,
+    gap: 12,
   },
 
   card: {
     border: "1px solid #eee",
     borderRadius: 12,
-    padding: 18,
+    padding: 14,
   },
 
   select: {
     width: "100%",
-    padding: 6,
-    marginBottom: 12,
+    padding: 8,
+    marginBottom: 10,
+    fontSize: 14,
   },
 
   cardTime: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 600,
   },
 
   footer: {
-    marginTop: 40,
+    marginTop: 28,
     textAlign: "center",
     fontSize: 12,
     color: "#777",
   },
 };
-
-
-
-
-
-
