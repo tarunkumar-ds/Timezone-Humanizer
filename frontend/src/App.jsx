@@ -171,7 +171,17 @@ export default function App() {
           ))}
         </div>
 
-        <div style={styles.footer}>Built by Tarun Kumar</div>
+        
+        <div style={styles.footer}>
+          Built by Tarun Kumar ·{" "}
+          <a
+            href="https://github.com/tarunkumar-ds/Timezone-Humanizer"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+        </div>
       </div>
     </div>
   );
