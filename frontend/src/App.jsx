@@ -167,12 +167,17 @@ export default function App() {
         />
 
         {bestHour !== null ? (
-      
-        ) : (
-          <div style={styles.bestTime}>
-          ⚠️ No perfect overlap — try nearby hours.
+      <div style={styles.bestTime}>
+        ⭐ Best meeting hour: {bestHour}:00
       </div>
-      )}
+    ) : (
+      <div style={styles.bestTime}>
+        ⚠️ No perfect overlap — try nearby hours.
+      </div>
+    )}
+
+
+        
 
 
           
