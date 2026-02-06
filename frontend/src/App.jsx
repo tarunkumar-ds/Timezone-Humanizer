@@ -4,14 +4,22 @@ const USER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const COUNTRIES = [
   { name: "United States", city: "New York", zone: "America/New_York" },
+  { name: "United states", city: "Chicago", zone: "America/Chicago" },
+  
+  { name: "United states", city:"Denver", zone: "America/Denver" },
+  { name: "United states", city: "Los Angeles", zone: "America/Los_Angeles" },
+
   { name: "United Kingdom", city: "London", zone: "Europe/London" },
   { name: "India", city: "Delhi", zone: "Asia/Kolkata" },
   { name: "Japan", city: "Tokyo", zone: "Asia/Tokyo" },
   { name: "Germany", city: "Berlin", zone: "Europe/Berlin" },
   { name: "France", city: "Paris", zone: "Europe/Paris" },
   { name: "Canada", city: "Toronto", zone: "America/Toronto" },
+  { name: "Canada", city: "Vancouver", zone: "America/Vancouver" },
   { name: "Brazil", city: "São Paulo", zone: "America/Sao_Paulo" },
+  { name: "Brazil", city: "Manaus", zone: "America/Manaus" },
   { name: "Australia", city: "Sydney", zone: "Australia/Sydney" },
+  { name: "Australia", city: "Perth", zone: "Australia/Perth" },
   { name: "China", city: "Beijing", zone: "Asia/Shanghai" },
   { name: "Russia", city: "Moscow", zone: "Europe/Moscow" },
   { name: "South Korea", city: "Seoul", zone: "Asia/Seoul" },
